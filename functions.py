@@ -47,27 +47,30 @@ def data_reading(file_path):
 def MLE_AKF_predict(PTT, HR, BP, a, counter):
     # a: numbers of calibration measurements
     # predict
-    for n in range(a):
-        X = np.zeros((3, 1), dtype=float)
-        X[0, 0] = 1
-        X[1, 0] = PTT[counter + n]
-        X[2, 0] = HR[counter + n]
+    if counter + a <= len(PTT):
+        for n in range(a):
+            X = np.zeros((3, 1), dtype=float)
+            X[0, 0] = 1
+            X[1, 0] = PTT[counter + n]
+            X[2, 0] = HR[counter + n]
 
-        if n == 0:
-            A = np.dot(X, X.T)
-            a = np.dot(X, BP[counter + n])
-        elif n > 0:
-            A = A + np.dot(X, X.T)
-            a = a + np.dot(X, BP[counter + n])
+            if n == 0:
+                A = np.dot(X, X.T)
+                a = np.dot(X, BP[counter + n])
+            elif n > 0:
+                A = A + np.dot(X, X.T)
+                a = a + np.dot(X, BP[counter + n])
 
-    A_inv = pinv(A)
-    C = np.dot(A_inv, a)
+        A_inv = pinv(A)
+        C = np.dot(A_inv, a)
 
-    sig_C = np.array([np.cov([C[0, 0], C[0, 0]]), np.cov([C[0, 0], C[1, 0]]), np.cov([C[0, 0], C[2, 0]]),
-                      np.cov([C[1, 0], C[0, 0]]), np.cov([C[1, 0], C[1, 0]]), np.cov([C[1, 0], C[2, 0]]),
-                      np.cov([C[2, 0], C[0, 0]]), np.cov([C[2, 0], C[1, 0]]), np.cov([C[2, 0], C[2, 0]])]).reshape(3, 3)
+        sig_C = np.array([np.cov([C[0, 0], C[0, 0]]), np.cov([C[0, 0], C[1, 0]]), np.cov([C[0, 0], C[2, 0]]),
+                          np.cov([C[1, 0], C[0, 0]]), np.cov([C[1, 0], C[1, 0]]), np.cov([C[1, 0], C[2, 0]]),
+                          np.cov([C[2, 0], C[0, 0]]), np.cov([C[2, 0], C[1, 0]]), np.cov([C[2, 0], C[2, 0]])]).reshape(3, 3)
 
-    return C, sig_C
+        return C, sig_C
+    else:
+        return [], []
 
 
 def MLE_AKF_correction(PTT, HR, BP, C, sig_r, counter):
@@ -77,7 +80,7 @@ def MLE_AKF_correction(PTT, HR, BP, C, sig_r, counter):
     X[1, 0] = PTT[counter]
     X[2, 0] = HR[counter]
 
-    golden = BP[100]
+    golden = BP[counter]
     predict = np.dot(C.T, X)
 
     C_new = C + np.dot(sig_r, X) * (golden - predict)
