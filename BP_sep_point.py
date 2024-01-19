@@ -12,7 +12,7 @@ file_path = os.path.join(root, 'data', 'whole data')
 dir_list = os.listdir(file_path)
 os.chdir(file_path)
 
-index = 0
+index = 5
 
 # test
 ptt_filename = dir_list[index]  # num from 0~5 (6 participants)
@@ -89,6 +89,22 @@ print(x_fine)
 print(f(x_fine))
 plt.show()
 
-os.chdir(root)
+
+save_path = os.path.join(root, 'data', f'{index}')
+
+if not os.path.isdir(save_path):
+    os.mkdir(save_path)
+
+
+PTT_discrete = [PTT[n] for n in sep_point]
+HR_discrete = [HR[n] for n in sep_point]
+SBP_discrete = [SBP[n] for n in sep_point]
+
+
+
+os.chdir(save_path)
 np.save(f'waveform data_{index}.npy', f(x_fine))
 np.save(f'BP_sep_point_{index}.npy', sep_point)
+np.save(f'SBP_discrete_{index}.npy', SBP_discrete)
+np.save(f'PTT_discrete_{index}.npy', PTT_discrete)
+np.save(f'HR_discrete_{index}.npy', HR_discrete)

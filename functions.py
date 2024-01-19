@@ -4,44 +4,34 @@ from numpy.linalg import *
 import pandas as pd
 import sys
 import os
+from scipy import stats
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(linewidth=1000)
 
 
-def data_reading(file_path):
-    dir_list = os.listdir(file_path)
-    os.chdir(file_path)
+def MLE(X, BP, A, a):
+    A = np.dot(X, X.T) + A
+    a = np.dot(X, BP) + a
 
-    for i in range(len(dir_list)):
-        if i == 0:
-            ptt_filename = dir_list[i]
+    A_inv = pinv(A)
+    C = np.dot(A_inv, a)
 
-            # data loading
-            ptt = pd.read_csv(ptt_filename)
-            ptt_df = pd.DataFrame(ptt)
-            ptt_list = ptt_df.values.tolist()
-            ptt_array = np.array(ptt_list)
+    return C, A, a
 
-            PTT = ptt_array[:, 1].astype(float)
-            HR = ptt_array[:, 3].astype(float)
-            SBP = ptt_array[:, 4].astype(float)
-            DBP = ptt_array[:, 5].astype(float)
 
-        elif i > 0:
-            ptt_filename = dir_list[i]
+def AKF(coeff, X, sig_R, BP):
+    coeff_new = coeff + np.dot(sig_R, X) * (BP - np.dot(coeff.T, X))
 
-            # data loading
-            ptt = pd.read_csv(ptt_filename)
-            ptt_df = pd.DataFrame(ptt)
-            ptt_list = ptt_df.values.tolist()
-            ptt_array = np.array(ptt_list)
+    return coeff_new
 
-            PTT = np.concatenate((PTT, ptt_array[:, 1].astype(float)), axis=0)
-            HR = np.concatenate((HR, ptt_array[:, 2].astype(float)), axis=0)
-            SBP = np.concatenate((SBP, ptt_array[:, 3].astype(float)), axis=0)
-            DBP = np.concatenate((DBP, ptt_array[:, 4].astype(float)), axis=0)
 
-    return PTT, HR, SBP, DBP
+def cov_coeff(coeff):
+    sig_C = np.array([np.cov([coeff[0, 0], coeff[0, 0]]), np.cov([coeff[0, 0], coeff[1, 0]]), np.cov([coeff[0, 0], coeff[2, 0]]),
+                      np.cov([coeff[1, 0], coeff[0, 0]]), np.cov([coeff[1, 0], coeff[1, 0]]), np.cov([coeff[1, 0], coeff[2, 0]]),
+                      np.cov([coeff[2, 0], coeff[0, 0]]), np.cov([coeff[2, 0], coeff[1, 0]]), np.cov([coeff[2, 0], coeff[2, 0]])]).reshape(3, 3)
+    return sig_C
+
+
 
 
 def MLE_AKF_predict(PTT, HR, BP, a, counter):
@@ -86,3 +76,10 @@ def MLE_AKF_correction(PTT, HR, BP, C, sig_r, counter):
     C_new = C + np.dot(sig_r, X) * (golden - predict)
 
     return C_new
+
+
+
+def var_cal(err):
+    zero_mean = stats.zscore(err)
+    var = np.var(zero_mean)
+    return var
