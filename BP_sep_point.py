@@ -1,3 +1,4 @@
+import numpy as np
 from scipy.interpolate import CubicSpline
 from functions import *
 import pandas as pd
@@ -12,7 +13,7 @@ file_path = os.path.join(root, 'data', 'whole data')
 dir_list = os.listdir(file_path)
 os.chdir(file_path)
 
-index = 5
+index = 0
 
 # test
 ptt_filename = dir_list[index]  # num from 0~5 (6 participants)
@@ -103,6 +104,9 @@ SBP_discrete = [SBP[n] for n in sep_point]
 
 
 os.chdir(save_path)
+np.save(f'PTT_continuous_{index}.npy', PTT)
+np.save(f'HR_continuous_{index}.npy', HR)
+np.save(f'SBP_continuous_{index}.npy', SBP)
 np.save(f'waveform data_{index}.npy', f(x_fine))
 np.save(f'BP_sep_point_{index}.npy', sep_point)
 np.save(f'SBP_discrete_{index}.npy', SBP_discrete)
