@@ -10,6 +10,7 @@ import sys
 import os
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(linewidth=1000)
+np.set_printoptions(suppress=True)
 
 index = 0   # file index(0~5, 'all')
 
@@ -58,7 +59,7 @@ error = []
 
 ######   MLE-AKF   ######
 for n in range(len(sep_point)):
-    print('sample number: ', n + 1)
+    print('######   sample number: ', n + 1, '\n')
     input = X[:, sep_point[n]].reshape((3, 1))
 
     # coefficient calculation
@@ -71,7 +72,7 @@ for n in range(len(sep_point)):
             print('MLE ended')
 
     # decide if AKF should work or not
-    if mle_end_flag == 1 or ((n + 1) - registration_num) % calibration_period == 0:
+    if n != 0 and (mle_end_flag == 1 or ((n + 1) - registration_num) % calibration_period == 0):
         akf_exe_flag = 1
         mle_end_flag = 0
         print('AKF activated')
@@ -79,23 +80,28 @@ for n in range(len(sep_point)):
     # executing AKF
     if akf_exe_flag == 1:
         # previous coefficient remembering
-        coeff_before = np.copy(coeff)
+        coeff_old = np.copy(coeff)
 
         if akf_counter == 0:
             sig_r = np.dot(X[:, 0].reshape((3, 1)), X[:, 0].reshape((3, 1)).T)
         sig_r = pinv(pinv(sig_r + sig_c) + np.dot(input, input.T))
 
-        coeff = AKF(coeff_before, input, sig_r, SBP[sep_point[n]])
+        coeff = AKF(coeff_old, input, sig_r, SBP[sep_point[n]])
+        print('coefficient updated!!!')
+        print('previous coefficient:\n', coeff_old)
+        print('coefficient:\n', coeff)
         # sig_c update
-        sig_c = coeff_cov(coeff_before, coeff)
+        sig_c = coeff_cov(coeff_old, coeff)
+        print('sig_c update!!!')
+        print('sig_c:\n', sig_c)
         akf_counter = akf_counter + 1
         akf_exe_flag = 0
 
         update_index.append(sep_point[n])   # optional
 
     if akf_counter > 0:
-        if n > 0:
-            for i in range(sep_point[n - 1], sep_point[n]):
+        if n < len(sep_point) - 1:
+            for i in range(sep_point[n], sep_point[n + 1]):
                 input = X[:, i].reshape((3, 1))
 
                 result = np.dot(coeff.T, input)
@@ -127,7 +133,8 @@ for i in range(len(result_list)):
 
 
 ######   visualization   ######
-x = list(range(0, len(result_list)))
+# x = list(range(0, len(result_list)))
+x = [n for n in range(sep_point[calibration_period], len(result_list)+sep_point[calibration_period])]
 x_SBP = list(range(0, len(SBP)))
 SBP_update = [SBP[n] for n in update_index]
 print('sep point index: ', sep_point)
@@ -139,9 +146,9 @@ plt.ylabel('SBP value')
 plt.title('Estimating Result')
 plt.plot(x, result_list, label='whole estimated')
 plt.plot(x_SBP, SBP, label='golden')
-plt.plot(avg_result_index, avg_result_list, label='avg estimated')
+# plt.plot(avg_result_index, avg_result_list, label='avg estimated')
 # plt.plot(avg_result_index, avg_result_list, 'ko')
-plt.plot(avg_result_index, avg_SBP_list, label='avg golden')
+# plt.plot(avg_result_index, avg_SBP_list, label='avg golden')
 # plt.plot(avg_result_index, avg_SBP_list, 'ko')
 plt.plot([n for n in sep_point], [SBP[n] for n in sep_point], 'ko')
 plt.plot(update_index, SBP_update, 'ro')
